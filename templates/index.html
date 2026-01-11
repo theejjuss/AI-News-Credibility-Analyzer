@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI News Credibility Analyzer</title>
+
+    <style>
+      :root {
+        --blue: #6366f1;
+        --green: #22c55e;
+        --yellow: #facc15;
+        --red: #ef4444;
+        --bg: #f5f7fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: #111827;
+      }
+
+      /* ===== HEADER ===== */
+      .header {
+        padding: 28px 40px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .header h1 {
+        margin: 0;
+      }
+
+      .subtitle {
+        color: #6b7280;
+        margin-top: 6px;
+      }
+
+      .clock {
+        text-align: right;
+      }
+
+      .clock .time {
+        font-weight: 800;
+      }
+
+      .clock .date {
+        font-size: 12px;
+        color: #6b7280;
+      }
+
+      /* ===== MAIN ===== */
+      .main {
+        padding: 20px 40px 40px;
+        max-width: 1100px;
+      }
+
+      /* ===== INPUT ===== */
+      .input-wrapper {
+        margin-bottom: 16px;
+      }
+
+      .input-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        margin-bottom: 6px;
+        display: block;
+      }
+
+      textarea {
+        width: 100%;
+        height: 190px;
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid #d1d5db;
+        font-size: 14px;
+        resize: none;
+      }
+
+      .actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 12px;
+      }
+
+      button {
+        padding: 12px 26px;
+        border-radius: 14px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        background: #c7d2fe;
+        cursor: not-allowed;
+      }
+
+      .analyze {
+        background: var(--blue);
+        color: white;
+      }
+      .save {
+        background: #10b981;
+        color: white;
+      }
+
+      .edit-warning {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #92400e;
+        display: none;
+      }
+
+      /* ===== ANALYSIS RESULT ===== */
+      .analysis-result {
+        margin-top: 30px;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08);
+        animation: fadeSlide 0.5s ease;
+      }
+
+      @keyframes fadeSlide {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Context */
+      .analysis-context {
+        background: #f9fafb;
+        padding: 14px;
+        border-radius: 14px;
+        margin-bottom: 18px;
+      }
+      .context-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      .context-snippet {
+        font-size: 13px;
+        color: #374151;
+        line-height: 1.5;
+      }
+
+      /* Verdict */
+      .verdict {
+        display: inline-block;
+        padding: 6px 18px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .credible {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .verify {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .suspicious {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      /* Score */
+      .score-value {
+        font-size: 28px;
+        font-weight: 800;
+        margin-top: 10px;
+      }
+      .score-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #166534;
+        margin-bottom: 10px;
+      }
+
+      /* Progress bar */
+      .progress-bar {
+        height: 12px;
+        background: #e5e7eb;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 22px;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--blue), var(--green));
+        animation: loadBar 1.2s forwards;
+      }
+      @keyframes loadBar {
+        to {
+          width: var(--w);
+        }
+      }
+
+      /* Breakdown */
+      .breakdown-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+      .metric-card {
+        background: #f9fafb;
+        border-radius: 14px;
+        padding: 14px;
+        opacity: 0;
+        animation: fadeUp 0.4s ease forwards;
+      }
+      .metric-card:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+      .metric-card:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .metric-card:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .metric-card:nth-child(4) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .metric-card span {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .metric-card strong {
+        display: block;
+        margin: 4px 0 8px;
+        font-size: 16px;
+      }
+
+      .mini-bar {
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .mini-bar div {
+        height: 100%;
+        background: #6366f1;
+      }
+
+      /* Footer */
+      .footer {
+        margin-top: 26px;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="header">
+      <div>
+        <h1>AI News Credibility Analyzer</h1>
+        <p class="subtitle">
+          Explainable credibility assessment with history & insights
+        </p>
+      </div>
+      <div class="clock">
+        <div class="time" id="time"></div>
+        <div class="date" id="date"></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <form method="POST" onsubmit="return validateForm()">
+        <div class="input-wrapper">
+          <label class="input-label">Analyzed Article</label>
+          <!-- TEXT PERSISTENCE FIX -->
+          <textarea id="newsText" name="news">
+{{ request.form.news or '' }}</textarea
+          >
+        </div>
+
+        <div class="actions">
+          <button id="analyzeBtn" class="analyze" disabled>Analyze</button>
+          <button type="button" class="save">Save</button>
+        </div>
+
+        <div class="edit-warning" id="editWarning">
+          ✎ Text modified. Re-analyze to update results.
+        </div>
+      </form>
+
+      {% if result %}
+      <div class="analysis-result">
+        <!-- Context -->
+        <div class="analysis-context">
+          <div class="context-title">Analyzed Article</div>
+          <div class="context-snippet">
+            {{ request.form.news[:240] }}{% if request.form.news|length > 240
+            %}...{% endif %}
+          </div>
+        </div>
+
+        <!-- Verdict -->
+        {% if score >= 75 %}
+        <div class="verdict credible">Likely Credible</div>
+        {% elif score >= 50 %}
+        <div class="verdict verify">Needs Verification</div>
+        {% else %}
+        <div class="verdict suspicious">Highly Suspicious</div>
+        {% endif %}
+
+        <!-- Score -->
+        <div class="score-value">{{ score }}%</div>
+        <div class="score-label" id="confidenceLabel"></div>
+
+        <!-- Main Bar -->
+        <div class="progress-bar">
+          <div class="progress-fill" style="--w:{{ score }}%"></div>
+        </div>
+
+        <!-- Breakdown -->
+        <div class="breakdown-grid">
+          <div class="metric-card">
+            <span>Trusted Source Signals</span>
+            <strong>Strong</strong>
+            <div class="mini-bar"><div style="width:{{ score }}%"></div></div>
+          </div>
+
+          <div class="metric-card">
+            <span>Sensational Language</span>
+            <strong>Minimal</strong>
+            <div class="mini-bar">
+              <div style="width:{{ 100-score }}%"></div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span>Anonymous Claims</span>
+            <strong>Rare</strong>
+            <div class="mini-bar">
+              <div style="width:{{ 100-score }}%"></div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span>Model Confidence</span>
+            <strong>{{ confidence }}</strong>
+            <div class="mini-bar"><div style="width:{{ score }}%"></div></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="footer">
+        ⚠ This system evaluates credibility indicators, not factual truth.
+      </div>
+    </div>
+
+    <script>
+      /* Clock */
+      function updateClock(){
+        const d=new Date();
+        time.innerText=d.toLocaleTimeString();
+        date.innerText=d.toDateString();
+      }
+      setInterval(updateClock,1000);
+      updateClock();
+
+      /* Input logic */
+      const textarea=document.getElementById("newsText");
+      const analyzeBtn=document.getElementById("analyzeBtn");
+      const editWarning=document.getElementById("editWarning");
+
+      let lastAnalyzedText = "{{ request.form.news or '' }}";
+
+      textarea.addEventListener("input",()=>{
+        analyzeBtn.disabled = textarea.value.trim().length < 15;
+        if(lastAnalyzedText && textarea.value !== lastAnalyzedText){
+          editWarning.style.display="block";
+        }
+      });
+
+      function validateForm(){
+        lastAnalyzedText = textarea.value;
+        editWarning.style.display="none";
+        return textarea.value.trim().length >= 15;
+      }
+
+      /* Confidence text */
+      {% if result %}
+      function confidenceLabel(score){
+        if(score>=85) return "High confidence credibility (Very Low Risk)";
+        if(score>=65) return "Moderate confidence (Low Risk)";
+        if(score>=45) return "Uncertain credibility (Medium Risk)";
+        return "Low confidence (High Risk)";
+      }
+      document.getElementById("confidenceLabel").innerText =
+        confidenceLabel({{ score }});
+      {% endif %}
+    </script>
+  </body>
+</html>
